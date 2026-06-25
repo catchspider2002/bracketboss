@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BracketBoss — World Cup Bracket Challenge</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-page="home">
+  <header class="topbar"><a class="brand" href="/">BracketBoss</a></header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Fill your bracket. TxLINE does the rest.</h1>
+      <p class="sub">Predict the World Cup knockout stage, then watch results auto-update and scores recalculate live. Bold picks score more.</p>
+    </section>
+
+    <section class="cards">
+      <div class="panel">
+        <h2>Create a group</h2>
+        <p class="muted">Start a group and share the code with friends.</p>
+        <input id="group-name" class="input" placeholder="Group name (optional)" />
+        <button id="create-btn" class="btn primary">Create group</button>
+        <div id="create-out" class="out"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Join a group</h2>
+        <p class="muted">Enter the 6-character invite code.</p>
+        <input id="join-code" class="input mono" placeholder="e.g. WC2026" maxlength="6" />
+        <button id="join-btn" class="btn">Join &amp; build</button>
+        <div id="join-out" class="out"></div>
+      </div>
+    </section>
+
+    <p class="wallet-note muted">Tip: connect your Solflare wallet on submit to satisfy the hackathon sign-up. (Wallet connect is a small add-on — public key only.)</p>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# Copy this file to `.dev.vars` (gitignored) and fill in real values for `wrangler dev`.
+# For PRODUCTION, do NOT use a file — set with:  wrangler secret put TXLINE_API_KEY
+TXLINE_API_KEY="your_txline_key"

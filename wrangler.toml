@@ -1,0 +1,33 @@
+name = "bracketboss"
+main = "src/worker.ts"
+compatibility_date = "2026-01-01"
+
+# Secrets (never commit real values) — set with:
+#   wrangler secret put TXLINE_API_KEY
+# (No Claude API — bracket propagation + scoring are deterministic.)
+
+# Frontend: served from ./public. Requests that don't match a file fall through to the Worker (/api/*).
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# Poll knockout fixtures: detect kickoff (lock) + full_time (result). Sparse/scheduled, no Container needed.
+[triggers]
+crons = ["* * * * *"]
+
+# Brackets, groups, leaderboards (relational user data)
+[[d1_databases]]
+binding = "DB"
+database_name = "bracketboss"
+database_id = "ecc3942a-c952-47a6-9ff2-3c9fae509e36"   # run: wrangler d1 create bracketboss
+
+# OPTIONAL UPGRADE — live leaderboard push via a per-group Durable Object.
+# Not enabled yet (the current build uses 15s client polling). To turn it on,
+# implement a `GroupRoom` class in src/ and uncomment:
+# [[durable_objects.bindings]]
+# name = "GROUP_ROOM"
+# class_name = "GroupRoom"
+#
+# [[migrations]]
+# tag = "v1"
+# new_sqlite_classes = ["GroupRoom"]

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BracketBoss — Leaderboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-page="leaderboard">
+  <header class="topbar"><a class="brand" href="/">BracketBoss</a></header>
+
+  <main class="wrap">
+    <h1 id="lb-title">Leaderboard</h1>
+    <p class="muted" id="lb-sub">Auto-refreshes every 15s as results come in.</p>
+    <table class="lb">
+      <thead><tr><th>#</th><th>Name</th><th>Points</th><th>Correct</th></tr></thead>
+      <tbody id="lb-body"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

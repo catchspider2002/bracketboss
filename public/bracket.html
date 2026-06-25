@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BracketBoss — Bracket</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body data-page="bracket">
+  <header class="topbar">
+    <a class="brand" href="/">BracketBoss</a>
+    <div id="score-pill" class="pill hidden"></div>
+  </header>
+
+  <main class="wrap">
+    <div id="status-bar" class="status-bar"></div>
+
+    <div id="builder-actions" class="actions hidden">
+      <input id="user-name" class="input" placeholder="Your name" />
+      <button id="submit-btn" class="btn primary" disabled>Submit bracket (<span id="pick-count">0</span>/32)</button>
+    </div>
+
+    <div id="submit-out" class="out"></div>
+
+    <div id="bracket" class="bracket"><p class="muted">Loading…</p></div>
+
+    <div id="post-actions" class="actions hidden">
+      <a id="leaderboard-link" class="btn" href="#">View leaderboard</a>
+      <button id="share-btn" class="btn">Copy share link</button>
+    </div>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
