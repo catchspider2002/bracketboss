@@ -13,8 +13,10 @@ CREATE TABLE IF NOT EXISTS brackets (
   user_name  TEXT NOT NULL,
   picks_json TEXT NOT NULL,      -- { slotId: teamName, ... } 32 picks
   odds_json  TEXT,               -- { slotId: { team: decimalOdds } } snapshot at submit (for upset bonus)
+  wallet     TEXT,               -- optional Solana address (for cross-device recall)
   created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_brackets_wallet ON brackets (wallet);
 CREATE INDEX IF NOT EXISTS idx_brackets_group ON brackets (group_code);
 
 CREATE TABLE IF NOT EXISTS matches (

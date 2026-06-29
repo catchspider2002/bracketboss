@@ -74,6 +74,9 @@ body {
 .team.correct { background: var(--green-bg); color: var(--green-fg); }
 .team.eliminated { color: var(--elim); text-decoration: line-through; }
 .team.tbd { color: var(--muted); font-style: italic; cursor: default; }
+.team.locked { cursor: default; }
+.team.correct .tag { color: var(--green-fg); font-weight: 700; }
+.match.done { opacity: .96; }
 .team .tag { font-size: 11px; color: var(--muted); }
 
 .lb { width: 100%; border-collapse: collapse; margin-top: 14px; background: #fff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
@@ -81,3 +84,13 @@ body {
 .lb th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 .lb tr:last-child td { border-bottom: none; }
 .lb .me { background: var(--green-bg); }
+
+/* Your stuff + wallet */
+ul.ys { list-style: none; margin: 4px 0 0; padding: 0; }
+ul.ys li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+ul.ys li:last-child { border-bottom: none; }
+ul.ys a { color: var(--accent); text-decoration: none; }
+#wallet-btn { font-variant-numeric: tabular-nums; }
+.modal-back { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; width: 280px; max-width: 90vw; }
+.modal h3 { margin: 0 0 6px; font-size: 16px; }

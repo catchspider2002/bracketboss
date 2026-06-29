@@ -4,7 +4,15 @@ compatibility_date = "2026-01-01"
 
 # Secrets (never commit real values) — set with:
 #   wrangler secret put TXLINE_API_KEY
+#   wrangler secret put ADMIN_KEY        # gates /api/admin/*
 # (No Claude API — bracket propagation + scoring are deterministic.)
+
+# Optional: "Sign in with Google" for cross-device sync. The OAuth Client ID is PUBLIC
+# (safe to commit). Leave unset to disable the sign-in button entirely.
+# Create one at https://console.cloud.google.com → Credentials → OAuth client ID (Web),
+# and add your deployed origin to "Authorized JavaScript origins".
+[vars]
+GOOGLE_CLIENT_ID = ""   # e.g. "1234567890-abc.apps.googleusercontent.com"
 
 # Frontend: served from ./public. Requests that don't match a file fall through to the Worker (/api/*).
 [assets]

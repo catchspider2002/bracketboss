@@ -69,4 +69,4 @@ upset bonus when picked team implied prob < 45% at bracket-lock time
 - **Snapshot odds at submission time** into the bracket's D1 row — needed later for upset-bonus scoring.
 - **Pick propagation must roll back downstream picks** when an earlier pick changes, or you get impossible brackets.
 - Mobile: round-by-round vertical scroll, not the full horizontal bracket.
-- Group invite code (6 chars) is the social primitive; add a wallet-connect on landing for the Solana requirement.
+- Group invite code (6 chars) is the social primitive. Optional Google sign-in (`GOOGLE_CLIENT_ID`) adds cross-device sync without gating play; the Solana tie-in is data provenance via TxLINE's on-chain audit trail, not user wallets.
