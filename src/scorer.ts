@@ -1,4 +1,4 @@
-// BracketBoss — scoring. Bold correct picks score more than safe ones.
+// BracketBoss - scoring. Bold correct picks score more than safe ones.
 import { CHAMPION_BONUS, POINTS, Round, UPSET_THRESHOLD } from './bracketTree';
 import { MatchRow } from './bracketEngine';
 import { Picks } from './bracketEngine';

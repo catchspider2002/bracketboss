@@ -51,7 +51,7 @@ body {
 .pill { background: var(--green-bg); color: var(--green-fg); padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 14px; }
 .hidden { display: none; }
 
-/* Bracket — round-by-round vertical layout (works desktop + mobile) */
+/* Bracket - round-by-round vertical layout (works desktop + mobile) */
 .bracket { display: flex; flex-direction: column; gap: 22px; margin-top: 14px; }
 .round h3 { margin: 0 0 8px; font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .round-matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }

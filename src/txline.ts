@@ -1,4 +1,4 @@
-// BracketBoss — TxLINE API client (auth + fixtures + scores → winner).
+// BracketBoss - TxLINE API client (auth + fixtures + scores → winner).
 //
 // Auth: every data call needs BOTH headers:
 //   Authorization: Bearer <guest JWT>   (30-day, fetched server-side, cached in D1 `meta`)
@@ -47,7 +47,7 @@ export interface TxFixture {
   p1: string; p1Id: number; p2: string; p2Id: number; p1IsHome: boolean;
 }
 
-// Strict match for the SENIOR MEN's FIFA World Cup only — excludes the many other
+// Strict match for the SENIOR MEN's FIFA World Cup only - excludes the many other
 // "World Cup" competitions TxLINE returns (qualifiers, U-17/U-20/youth, women's,
 // Club World Cup, beach/futsal/esports). This is what made auto-seed look wrong.
 export function isMainWorldCup(name: string): boolean {

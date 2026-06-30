@@ -1,11 +1,11 @@
-# BracketBoss — World Cup Tournament Bracket Challenge
+# BracketBoss - World Cup Tournament Bracket Challenge
 ## Build Spec for Claude Code
 
 ---
 
 ## What we're building
 
-A social bracket prediction app where fans fill out their World Cup knockout stage bracket before it begins, then watch TxLINE auto-update results and eliminate picks in real time across every match. Friends compete on a shared leaderboard. Scoring rewards bold predictions (picking upsets scores more). No manual updates — ever.
+A social bracket prediction app where fans fill out their World Cup knockout stage bracket before it begins, then watch TxLINE auto-update results and eliminate picks in real time across every match. Friends compete on a shared leaderboard. Scoring rewards bold predictions (picking upsets scores more). No manual updates - ever.
 
 Submitted to the **Superteam × TxODDS World Cup Hackathon** under the **Fan Experiences** track.
 
@@ -99,11 +99,11 @@ Bracket tree data structure:
 }
 ```
 
-Store the full bracket tree in `db/matches.json`. Seed it with the known Round of 32 matchups (these are determined from group stage results — TxLINE will provide them). Propagate winners forward as results come in.
+Store the full bracket tree in `db/matches.json`. Seed it with the known Round of 32 matchups (these are determined from group stage results - TxLINE will provide them). Propagate winners forward as results come in.
 
 ---
 
-## Backend — detailed spec
+## Backend - detailed spec
 
 ### TxLINE SSE client (`txline.js`)
 
@@ -131,7 +131,7 @@ Two functions:
 
 ### Scorer (`scorer.js`)
 
-Points system — reward bold, correct picks more than safe, obvious ones:
+Points system - reward bold, correct picks more than safe, obvious ones:
 
 ```js
 const POINTS = {
@@ -188,11 +188,11 @@ Returns ranked list: `[{ userName, bracketId, totalPoints, correctPicks, rank }]
 Sorted by `totalPoints` descending. Include delta from last update.
 
 **`GET /matches/knockout`**
-Returns current state of the bracket tree — teams, results, upcoming kickoffs.
+Returns current state of the bracket tree - teams, results, upcoming kickoffs.
 
 ---
 
-## Frontend — detailed spec
+## Frontend - detailed spec
 
 ### Landing page (`index.html`)
 
@@ -208,9 +208,9 @@ Pre-lock (before first knockout match kicks off):
 
 - Visual bracket: all 32 knockout slots laid out left-to-right, Round of 32 → Final
 - Teams displayed in each first-round slot (pulled from `GET /matches/knockout`)
-- User clicks/taps a team to pick them as winner — their name propagates to the next round slot
+- User clicks/taps a team to pick them as winner - their name propagates to the next round slot
 - Picking the winner of a match clears the loser from all subsequent rounds
-- "Submit bracket" button at top — disabled until all 63 picks are filled
+- "Submit bracket" button at top - disabled until all 63 picks are filled
 - Validation errors shown inline (e.g. "You picked Brazil to reach the final but didn't pick them to win the semi")
 
 Post-lock (after first knockout match kicks off):
@@ -220,7 +220,7 @@ Post-lock (after first knockout match kicks off):
   - Correct picks: team name turns green
   - Eliminated teams: struck through in red, ghosted
   - Pending picks: normal styling
-- Running score shown at top: "142 pts — 2nd in your group"
+- Running score shown at top: "142 pts - 2nd in your group"
 - "View leaderboard" button → `leaderboard.html`
 
 ### Leaderboard (`leaderboard.html`)
@@ -234,14 +234,14 @@ Post-lock (after first knockout match kicks off):
 
 After submitting a bracket:
 - Show shareable link: `bracketboss.xyz/bracket/BRACKET_ID`
-- Pre-composed tweet: "I've filled my #WorldCup2026 bracket on BracketBoss — think I know who's winning it 🏆 [link]"
-- The public bracket URL shows a read-only view of the bracket — great for judges to verify it works
+- Pre-composed tweet: "I've filled my #WorldCup2026 bracket on BracketBoss - think I know who's winning it 🏆 [link]"
+- The public bracket URL shows a read-only view of the bracket - great for judges to verify it works
 
 ---
 
 ## Visual design
 
-The bracket layout is the most important UI element — it needs to be clear and scannable on both desktop and mobile.
+The bracket layout is the most important UI element - it needs to be clear and scannable on both desktop and mobile.
 
 **Desktop:** horizontal flow left to right (R32 → Final). Each round is a column. Teams stacked vertically. Connector lines between rounds drawn with SVG.
 
@@ -269,9 +269,9 @@ Use SVG connector lines between rounds. Draw them with JS after the bracket rend
 
 ## Deployment
 
-- **Backend:** Railway or Fly.io — persistent process for SSE connection
+- **Backend:** Railway or Fly.io - persistent process for SSE connection
 - **Frontend:** Vercel or Netlify
-- Both must be publicly accessible. The public bracket share URL is important — judges will use it.
+- Both must be publicly accessible. The public bracket share URL is important - judges will use it.
 
 ---
 
@@ -288,14 +288,14 @@ PORT=3001
 
 ## Demo video plan (max 5 minutes)
 
-1. **0:00–0:30** — Open landing page. Create a group. Get the invite code.
-2. **0:30–1:30** — Fill out the bracket on the builder. Show the pick propagation working — click a team in R32, their name appears in R16. Fill all 63 picks. Hit Submit.
-3. **1:30–2:00** — Open a second browser tab. Join the same group with a different name. Submit a different bracket.
-4. **2:00–3:00** — Show the leaderboard. Then simulate a match result firing (add a `/mock-result` endpoint). Watch the bracket update live: correct picks go green, eliminated teams get struck through. Show the leaderboard updating in real time.
-5. **3:00–3:30** — Show the public bracket share URL. Open it in a new tab. Confirm it's a clean read-only view.
-6. **3:30–4:00** — Show the upset bonus in action — a correctly picked underdog showing higher points than a correctly picked favourite.
-7. **4:00–4:30** — Pull up `bracketEngine.js` briefly. Show the propagation logic — clean, readable.
-8. **4:30–5:00** — Wrap: "Fill once. Follow all 32 knockout matches automatically. Compete with friends. Zero admin."
+1. **0:00-0:30** - Open landing page. Create a group. Get the invite code.
+2. **0:30-1:30** - Fill out the bracket on the builder. Show the pick propagation working - click a team in R32, their name appears in R16. Fill all 63 picks. Hit Submit.
+3. **1:30-2:00** - Open a second browser tab. Join the same group with a different name. Submit a different bracket.
+4. **2:00-3:00** - Show the leaderboard. Then simulate a match result firing (add a `/mock-result` endpoint). Watch the bracket update live: correct picks go green, eliminated teams get struck through. Show the leaderboard updating in real time.
+5. **3:00-3:30** - Show the public bracket share URL. Open it in a new tab. Confirm it's a clean read-only view.
+6. **3:30-4:00** - Show the upset bonus in action - a correctly picked underdog showing higher points than a correctly picked favourite.
+7. **4:00-4:30** - Pull up `bracketEngine.js` briefly. Show the propagation logic - clean, readable.
+8. **4:30-5:00** - Wrap: "Fill once. Follow all 32 knockout matches automatically. Compete with friends. Zero admin."
 
 ---
 
@@ -329,12 +329,12 @@ PORT=3001
 
 ## Key decisions / notes for Claude Code
 
-- **Seed `matches.json` with the bracket tree structure first** — the tree shape (which slot feeds into which) is fixed by tournament rules regardless of which teams are in it. Build the tree structure with placeholder team names and wire up the propagation logic before TxLINE is integrated. Then slot in real teams once the group stage completes.
-- **Bracket lock timing is critical** — lock all submissions the moment the first knockout match kicks off. Use the TxLINE `kickoff` event to trigger this. Store the lock timestamp in `db/matches.json`. Reject any `POST /bracket` after this time.
+- **Seed `matches.json` with the bracket tree structure first** - the tree shape (which slot feeds into which) is fixed by tournament rules regardless of which teams are in it. Build the tree structure with placeholder team names and wire up the propagation logic before TxLINE is integrated. Then slot in real teams once the group stage completes.
+- **Bracket lock timing is critical** - lock all submissions the moment the first knockout match kicks off. Use the TxLINE `kickoff` event to trigger this. Store the lock timestamp in `db/matches.json`. Reject any `POST /bracket` after this time.
 - **Store odds at submission time** for the upset bonus. When a user submits their bracket, snapshot the current TxLINE odds for every knockout match that has been scheduled. Store this in the bracket record. Used later to determine whether a correct pick was an upset.
-- **Pick propagation must handle rollback** — if a user changes a pick in R32, clear all downstream picks for that side of the bracket before applying the new pick. Otherwise you get impossible brackets (Team A in QF but Team B in SF on the same path).
+- **Pick propagation must handle rollback** - if a user changes a pick in R32, clear all downstream picks for that side of the bracket before applying the new pick. Otherwise you get impossible brackets (Team A in QF but Team B in SF on the same path).
 - **SVG connector lines** are the tricky UI part. Draw them with JS after the bracket renders by measuring element positions and drawing `<line>` elements. Consider using a simple library like `leader-line` (available on cdnjs) rather than hand-rolling this.
-- **Add `/mock-result` endpoint** — takes `{ matchSlotId, winner, score }` and fires as if TxLINE sent the full_time event. Essential for the demo video since you can't control when real matches happen.
+- **Add `/mock-result` endpoint** - takes `{ matchSlotId, winner, score }` and fires as if TxLINE sent the full_time event. Essential for the demo video since you can't control when real matches happen.
 - **Mobile layout:** don't try to fit the full horizontal bracket on mobile. Use a round-by-round vertical scroll instead. Each round is a labelled section. It's less visually impressive but actually usable on a phone, which is where most fans will be.
-- **Flat file DB** is fine for the hackathon — with max 3 members per team and a 25-day tournament window, `brackets.json` won't exceed a few hundred KB.
-- **The public share URL is important for judges** — make sure `GET /bracket/:bracketId` renders a clean, read-only HTML view (not just JSON). Judges will click this link. It should look good.
+- **Flat file DB** is fine for the hackathon - with max 3 members per team and a 25-day tournament window, `brackets.json` won't exceed a few hundred KB.
+- **The public share URL is important for judges** - make sure `GET /bracket/:bracketId` renders a clean, read-only HTML view (not just JSON). Judges will click this link. It should look good.

@@ -2,10 +2,10 @@ name = "bracketboss"
 main = "src/worker.ts"
 compatibility_date = "2026-01-01"
 
-# Secrets (never commit real values) — set with:
+# Secrets (never commit real values) - set with:
 #   wrangler secret put TXLINE_API_KEY
 #   wrangler secret put ADMIN_KEY        # gates /api/admin/*
-# (No Claude API — bracket propagation + scoring are deterministic.)
+# (No Claude API - bracket propagation + scoring are deterministic.)
 
 # Optional: "Sign in with Google" for cross-device sync. The OAuth Client ID is PUBLIC
 # (safe to commit). Leave unset to disable the sign-in button entirely.
@@ -29,7 +29,7 @@ binding = "DB"
 database_name = "bracketboss"
 database_id = "ecc3942a-c952-47a6-9ff2-3c9fae509e36"   # run: wrangler d1 create bracketboss
 
-# OPTIONAL UPGRADE — live leaderboard push via a per-group Durable Object.
+# OPTIONAL UPGRADE - live leaderboard push via a per-group Durable Object.
 # Not enabled yet (the current build uses 15s client polling). To turn it on,
 # implement a `GroupRoom` class in src/ and uncomment:
 # [[durable_objects.bindings]]

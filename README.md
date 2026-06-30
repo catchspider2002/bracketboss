@@ -1,6 +1,6 @@
-# BracketBoss — World Cup Tournament Bracket Challenge
+# BracketBoss - World Cup Tournament Bracket Challenge
 
-Fill out your World Cup knockout bracket, then watch TxLINE auto-update results and rescore every bracket in your group in real time. Bold (upset) picks score more. Submitted to the **Superteam × TxODDS World Cup Hackathon** — Consumer & Fan Experiences track.
+Fill out your World Cup knockout bracket, then watch TxLINE auto-update results and rescore every bracket in your group in real time. Bold (upset) picks score more. Submitted to the **Superteam × TxODDS World Cup Hackathon** - Consumer & Fan Experiences track.
 
 **Stack:** Cloudflare Workers + Cron Triggers + D1 (no container, no Claude API). Frontend served from `/public` via Workers static assets.
 
@@ -17,7 +17,7 @@ Fill out your World Cup knockout bracket, then watch TxLINE auto-update results 
 - **Worker** (`src/worker.ts`): REST API under `/api/*` + a cron `scheduled` handler.
 - **D1**: `groups`, `brackets`, `matches`, `meta` (see `schema.sql`). Match tree is seeded automatically on first request.
 - **Scoring** (`src/scorer.ts`): r32 5 · r16 10 · qf 20 · sf 40 · final 80 (+50 champion) · third 15, each with an upset bonus when the picked team's implied probability was < 45% at lock time.
-- **Per-match locking**: brackets stay open during the tournament. Any match that has finished is pre-filled with the real winner in the builder and can't be changed — and the server forces it on submit, so you can't pick a wrong result for a played game. (`POST /api/lock` still exists to freeze all submissions manually, e.g. at tournament end.)
+- **Per-match locking**: brackets stay open during the tournament. Any match that has finished is pre-filled with the real winner in the builder and can't be changed - and the server forces it on submit, so you can't pick a wrong result for a played game. (`POST /api/lock` still exists to freeze all submissions manually, e.g. at tournament end.)
 
 ### TxLINE integration (wired)
 
@@ -52,7 +52,7 @@ wrangler secret put ADMIN_KEY           # any long random string (gates /api/adm
 #    Create a Web OAuth Client ID at https://console.cloud.google.com (Credentials),
 #    add your deployed origin under "Authorized JavaScript origins", then set it in
 #    wrangler.toml ([vars] GOOGLE_CLIENT_ID = "..."). The client id is public.
-#    Leave it blank to hide the sign-in button — the app works fully without it.
+#    Leave it blank to hide the sign-in button - the app works fully without it.
 
 # 5) Run locally / deploy
 npm run dev                          # http://localhost:8787
@@ -90,7 +90,7 @@ Copy `.dev.vars.example` → `.dev.vars` (gitignored) and fill in `TXLINE_API_KE
 
 ## Going live with real results
 
-The group stage is over, so the Round-of-32 is set. One command does everything — the **auto-seed** endpoint knows the official 2026 R32 draw (`src/bracket2026.ts`) and matches each TxLINE fixture to its **correct bracket slot by team name**, so the pairings are right automatically (no kickoff-order guessing, no manual fixture lists). It also attaches the fixture id + kickoff to wire the cron, marks any already-finished match immediately, and fills any slot whose live fixture hasn't appeared yet with the real team names from the draw. Uses the `ADMIN_KEY` in an `X-Admin-Key` header.
+The group stage is over, so the Round-of-32 is set. One command does everything - the **auto-seed** endpoint knows the official 2026 R32 draw (`src/bracket2026.ts`) and matches each TxLINE fixture to its **correct bracket slot by team name**, so the pairings are right automatically (no kickoff-order guessing, no manual fixture lists). It also attaches the fixture id + kickoff to wire the cron, marks any already-finished match immediately, and fills any slot whose live fixture hasn't appeared yet with the real team names from the draw. Uses the `ADMIN_KEY` in an `X-Admin-Key` header.
 
 ```bash
 BASE=https://bracketboss.<sub>.workers.dev
@@ -100,14 +100,14 @@ KEY=your_admin_key
 #    have a live TxLINE fixture), `missingFixtures`, and `unmatchedFixtures` (name-alias misses):
 curl -H "X-Admin-Key: $KEY" "$BASE/api/admin/auto-seed-r32"
 
-# 2) APPLY — that's it, no fixtureIds needed:
+# 2) APPLY - that's it, no fixtureIds needed:
 curl -X POST "$BASE/api/admin/auto-seed-r32" -H "X-Admin-Key: $KEY" \
   -H 'content-type: application/json' -d '{"apply":true}'
 ```
 
-The builder now shows the real teams in their true positions, finished matches are scored on the spot (the response lists them in `results`), and the every-minute cron posts later winners automatically (extra time + penalties handled) and propagates teams forward. If a fixture's teams don't match the draw, it shows up in `unmatchedFixtures` — add the name variant to `ALIASES` in `src/bracket2026.ts`.
+The builder now shows the real teams in their true positions, finished matches are scored on the spot (the response lists them in `results`), and the every-minute cron posts later winners automatically (extra time + penalties handled) and propagates teams forward. If a fixture's teams don't match the draw, it shows up in `unmatchedFixtures` - add the name variant to `ALIASES` in `src/bracket2026.ts`.
 
-A match that finished early in the round can drop out of the TxLINE fixtures snapshot before you seed (so there's no live fixture and the cron can't post it). For those, add the final score to the `result` field of that slot in `R32_DRAW` (`src/bracket2026.ts`) — auto-seed applies it as a fallback so the match is scored and locked. (Or set it ad-hoc with `POST /api/mock-result {slotId,winner,score}`.) Slots that are still genuinely unresolved appear in `missingFixtures`.
+A match that finished early in the round can drop out of the TxLINE fixtures snapshot before you seed (so there's no live fixture and the cron can't post it). For those, add the final score to the `result` field of that slot in `R32_DRAW` (`src/bracket2026.ts`) - auto-seed applies it as a fallback so the match is scored and locked. (Or set it ad-hoc with `POST /api/mock-result {slotId,winner,score}`.) Slots that are still genuinely unresolved appear in `missingFixtures`.
 
 > The slot → FIFA-match-number map and the R32 teams in `src/bracket2026.ts` come from the official tournament regulations and the published bracket (group stage complete). If you re-run this for a different tournament, update that file.
 
@@ -129,4 +129,4 @@ curl -X POST "$BASE/api/admin/map" -H "X-Admin-Key: $KEY" -H 'content-type: appl
 
 - TxLINE polling is stubbed; results are demo-driven until the API is wired.
 - Live leaderboard uses 15s client polling; a per-group Durable Object (scaffolded but disabled in `wrangler.toml`) can push updates instantly later.
-- Identity is group code + name. The home page remembers your groups/brackets in `localStorage`; **optionally** signing in with Google keys submitted brackets to your account so they also recall across devices via `POST /api/my` (the server verifies the Google ID token, so it's not trust-on-submit). No account is required to play — sign-in is pure progressive enhancement, which keeps the experience friendly for mainstream, non-technical fans. The Solana angle here is data provenance: every result and odds value comes from TxLINE's on-chain, tamper-evident audit trail.
+- Identity is group code + name. The home page remembers your groups/brackets in `localStorage`; **optionally** signing in with Google keys submitted brackets to your account so they also recall across devices via `POST /api/my` (the server verifies the Google ID token, so it's not trust-on-submit). No account is required to play - sign-in is pure progressive enhancement, which keeps the experience friendly for mainstream, non-technical fans. The Solana angle here is data provenance: every result and odds value comes from TxLINE's on-chain, tamper-evident audit trail.

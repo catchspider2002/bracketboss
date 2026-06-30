@@ -1,4 +1,4 @@
-# BracketBoss — Submission Checklist
+# BracketBoss - Submission Checklist
 
 Track: **Consumer & Fan Experiences** (Superteam × TxODDS World Cup Hackathon)
 Live: https://bracketboss.catchspider2002.workers.dev · Repo: https://github.com/catchspider2002/bracketboss
@@ -11,7 +11,7 @@ Live: https://bracketboss.catchspider2002.workers.dev · Repo: https://github.co
 - [x] Frontend: create/join group, bracket builder (pick propagation), live tracker, leaderboard
 - [x] Shareable read-only bracket URLs
 - [x] "Your stuff" memory via localStorage (groups + brackets persist on home)
-- [x] Optional "Sign in with Google" (server-verified ID token) for cross-device sync — no account required to play
+- [x] Optional "Sign in with Google" (server-verified ID token) for cross-device sync - no account required to play
 - [x] Cross-device recall: brackets keyed to the Google account via `POST /api/my`
 - [x] Removed wallet/Solana-wallet login (not a hackathon requirement; friction for mainstream fans)
 - [x] TxLINE wired: guest-JWT auth (cached), `/api/fixtures/snapshot`, `/api/scores/snapshot/{id}`
@@ -26,15 +26,15 @@ Live: https://bracketboss.catchspider2002.workers.dev · Repo: https://github.co
 
 ## ⏳ Before submitting
 
-- [ ] **Record demo video** (≤5 min) — follow the shot list in README; use `mock-result` to show live scoring
+- [ ] **Record demo video** (≤5 min) - follow the shot list in README; use `mock-result` to show live scoring
 - [ ] **Add the demo video link** to README (and the submission form)
-- [ ] **Push final code to GitHub** — confirm latest commit (txline + Google auth + admin); verify `.dev.vars` is NOT committed
+- [ ] **Push final code to GitHub** - confirm latest commit (txline + Google auth + admin); verify `.dev.vars` is NOT committed
 - [ ] (Optional) Create a Google OAuth Client ID and set `GOOGLE_CLIENT_ID` in wrangler.toml to enable cross-device sync
-- [ ] **Verify TxLINE end-to-end** — set `ADMIN_KEY`, then `GET /api/admin/fixtures` returns live fixtures
+- [ ] **Verify TxLINE end-to-end** - set `ADMIN_KEY`, then `GET /api/admin/fixtures` returns live fixtures
 - [ ] **Fill submission form**: live URL, GitHub URL, video URL, TxLINE endpoints used, API feedback
 - [ ] Attach custom domain `bracketboss.<domain>` (optional, nicer than `workers.dev`)
 
-## 🔜 Go fully live now (group stage is over — R32 is set)
+## 🔜 Go fully live now (group stage is over - R32 is set)
 
 - [ ] `GET /api/admin/auto-seed-r32` to preview (official draw → correct slots by team name)
 - [ ] Check `withFixture`/`missingFixtures`/`unmatchedFixtures`, then `POST {apply:true}` (no fixtureIds needed)

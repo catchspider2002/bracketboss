@@ -1,4 +1,4 @@
-// BracketBoss — bracket validation and result propagation.
+// BracketBoss - bracket validation and result propagation.
 import { allNodes, feedersOf, forwardOf, loserForwardOf, Round } from './bracketTree';
 
 export type Picks = Record<string, string>; // slotId -> team name

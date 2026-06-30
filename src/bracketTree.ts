@@ -1,4 +1,4 @@
-// BracketBoss — knockout tree shape, scoring table, and forward/feeder helpers.
+// BracketBoss - knockout tree shape, scoring table, and forward/feeder helpers.
 // The tree SHAPE is fixed by tournament rules regardless of which teams fill it.
 // 2026 expanded format: 32 teams enter the knockout stage.
 //   R32 (16) -> R16 (8) -> QF (4) -> SF (2) -> Final (1)  + Third-place play-off (1)

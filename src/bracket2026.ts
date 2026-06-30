@@ -1,4 +1,4 @@
-// BracketBoss — official 2026 FIFA World Cup Round-of-32 draw, mapped to our bracket-tree slots.
+// BracketBoss - official 2026 FIFA World Cup Round-of-32 draw, mapped to our bracket-tree slots.
 //
 // The slot -> FIFA-match-number map is FIXED by the tournament regulations (Annex):
 //   r32 slot order is derived from the R16 pairings so the tree advances correctly

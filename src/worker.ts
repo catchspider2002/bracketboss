@@ -1,4 +1,4 @@
-// BracketBoss — Cloudflare Worker (API + cron). Frontend served from /public via [assets].
+// BracketBoss - Cloudflare Worker (API + cron). Frontend served from /public via [assets].
 import { allNodes, feedersOf, PLACEHOLDER_TEAMS, Round } from './bracketTree';
 import { MatchRow, propagate, validateBracket, Picks } from './bracketEngine';
 import { scoreBracket } from './scorer';
@@ -10,7 +10,7 @@ export interface Env {
   ASSETS: Fetcher;
   TXLINE_API_KEY?: string;
   ADMIN_KEY?: string;
-  GOOGLE_CLIENT_ID?: string; // optional — enables "Sign in with Google" cross-device sync
+  GOOGLE_CLIENT_ID?: string; // optional - enables "Sign in with Google" cross-device sync
 }
 
 // Verify a Google Identity Services ID token and return the stable user id (sub).
@@ -58,11 +58,11 @@ export default {
   },
 
   // Cron: for each knockout slot mapped to a TxLINE fixture, apply the winner on full time and
-  // propagate it forward. Matches lock per-match (in the builder) once they have a result — there
+  // propagate it forward. Matches lock per-match (in the builder) once they have a result - there
   // is no global bracket lock. No-op until fixtures are mapped (see auto-seed / /api/admin/map).
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
     await ensureSeeded(env);
-    if (!env.TXLINE_API_KEY) return; // not wired yet — nothing to poll
+    if (!env.TXLINE_API_KEY) return; // not wired yet - nothing to poll
     const matches = await loadMatches(env);
     const mapped = Object.values(matches).filter((m) => m.match_id && !m.result_winner);
     for (const m of mapped) {
@@ -131,7 +131,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
     // Optional: if signed in with Google, tie this bracket to the account for cross-device recall.
     const owner = (await verifyGoogle(body.idToken, env))?.sub ?? null;
 
-    // Force completed matches to the real winner — you can't submit a wrong pick for a played game.
+    // Force completed matches to the real winner - you can't submit a wrong pick for a played game.
     const matches = await loadMatches(env);
     const picks: Picks = { ...body.picks };
     for (const m of Object.values(matches)) {
@@ -184,12 +184,12 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
     return json({ groupCode: code, leaderboard: ranked });
   }
 
-  // GET /api/config — public config for the frontend (Google client id, if configured)
+  // GET /api/config - public config for the frontend (Google client id, if configured)
   if (path === '/api/config' && method === 'GET') {
     return json({ googleClientId: env.GOOGLE_CLIENT_ID ?? null });
   }
 
-  // POST /api/my { idToken } — brackets + groups for the signed-in Google account (cross-device recall)
+  // POST /api/my { idToken } - brackets + groups for the signed-in Google account (cross-device recall)
   if (path === '/api/my' && method === 'POST') {
     const body = await req.json().catch(() => ({})) as { idToken?: string };
     const user = await verifyGoogle(body.idToken, env);
@@ -201,7 +201,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
     return json({ brackets, groups });
   }
 
-  // POST /api/mock-result  { slotId, winner, score }  — demo driver (stands in for TxLINE full_time)
+  // POST /api/mock-result  { slotId, winner, score }  - demo driver (stands in for TxLINE full_time)
   if (path === '/api/mock-result' && method === 'POST') {
     const body = await req.json().catch(() => ({})) as { slotId?: string; winner?: string; score?: string };
     if (!body.slotId || !body.winner) return json({ error: 'slotId and winner are required' }, 400);
@@ -209,7 +209,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
     return json({ changed });
   }
 
-  // POST /api/lock — manually lock (e.g. to test)
+  // POST /api/lock - manually lock (e.g. to test)
   if (path === '/api/lock' && method === 'POST') {
     await setLocked(env);
     return json({ locked: true });
@@ -221,14 +221,14 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
       return json({ error: 'forbidden' }, 403);
     }
 
-    // GET /api/admin/fixtures?competitionId= — list World Cup fixtures from TxLINE (to find ids)
+    // GET /api/admin/fixtures?competitionId= - list World Cup fixtures from TxLINE (to find ids)
     if (path === '/api/admin/fixtures' && method === 'GET') {
       const cid = url.searchParams.get('competitionId');
       const fixtures = await listWorldCupFixtures(env, cid ? Number(cid) : undefined);
       return json({ fixtures });
     }
 
-    // POST /api/admin/seed-teams { teams:[32] }  or  { r32:[{slotId,home,away}] } — real R32 draw
+    // POST /api/admin/seed-teams { teams:[32] }  or  { r32:[{slotId,home,away}] } - real R32 draw
     if (path === '/api/admin/seed-teams' && method === 'POST') {
       const b = await req.json().catch(() => ({})) as { teams?: string[]; r32?: { slotId: string; home: string; away: string }[] };
       const updates: { slotId: string; home: string; away: string }[] = [];
@@ -243,15 +243,15 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
       return json({ updated: updates.length });
     }
 
-    // GET/POST /api/admin/auto-seed-r32 — one-shot: seed the OFFICIAL 2026 Round-of-32 draw.
+    // GET/POST /api/admin/auto-seed-r32 - one-shot: seed the OFFICIAL 2026 Round-of-32 draw.
     //   Each TxLINE fixture is matched to its true bracket slot by team names (R32_DRAW), so the
-    //   pairings are correct automatically — no kickoff-order guessing, robust to missing fixtures.
+    //   pairings are correct automatically - no kickoff-order guessing, robust to missing fixtures.
     //   Slots whose fixture is matched also get match_id + kickoff (wires the cron) and, if the
     //   match is already finished, the winner is applied immediately. Slots with no live fixture
     //   still get the real team names from the draw (so the bracket is complete).
     //   GET (or POST without apply:true) = PREVIEW only. POST { apply:true } writes.
     if (path === '/api/admin/auto-seed-r32' && (method === 'POST' || method === 'GET')) {
-      if (await isLocked(env)) return json({ error: 'Brackets are locked — cannot reseed R32.' }, 423);
+      if (await isLocked(env)) return json({ error: 'Brackets are locked - cannot reseed R32.' }, 423);
       const b = method === 'POST'
         ? (await req.json().catch(() => ({})) as { competitionId?: number; apply?: boolean })
         : {};
@@ -294,7 +294,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
             .bind(a.home, a.away, a.fixtureId ? String(a.fixtureId) : null, a.kickoff, a.slotId, 'r32').run();
         }
         // 2) Immediately mark winners for any R32 match already finished (and propagate forward).
-        //    No global lock — brackets stay open; completed matches are locked per-match in the
+        //    No global lock - brackets stay open; completed matches are locked per-match in the
         //    builder (pre-selected to the real winner, not editable) and enforced on submit.
         for (const a of assignments) {
           if (a.fixtureId) {
@@ -308,7 +308,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
               }
             } catch (e) { console.log('seed result error', a.slotId, String(e)); }
           } else if (a.knownResult) {
-            // Finished match that aged out of the snapshot — apply the result from the draw data.
+            // Finished match that aged out of the snapshot - apply the result from the draw data.
             await applyResult(env, a.slotId, a.knownResult.winner, a.knownResult.score);
             results.push({ slotId: a.slotId, winner: a.knownResult.winner, score: a.knownResult.score });
           }
@@ -320,13 +320,13 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
         unmatchedFixtures: unmatched,
         note: `Seeded the official 2026 R32 draw into correct bracket positions by team name. `
           + `${withFixture}/16 slots have a live TxLINE fixture (cron will post their results); `
-          + `${missing.length} slot(s) have teams only (no live fixture yet) — they'll auto-wire when the fixture appears, or use /api/admin/map. `
-          + (unmatched.length ? `${unmatched.length} TxLINE fixture(s) didn't match any draw pair (likely a name alias — see unmatchedFixtures).` : `All fixtures matched the draw.`),
+          + `${missing.length} slot(s) have teams only (no live fixture yet) - they'll auto-wire when the fixture appears, or use /api/admin/map. `
+          + (unmatched.length ? `${unmatched.length} TxLINE fixture(s) didn't match any draw pair (likely a name alias - see unmatchedFixtures).` : `All fixtures matched the draw.`),
         assignments,
       });
     }
 
-    // POST /api/admin/map { slotId, fixtureId, home?, away?, kickoff? } — link a slot to a TxLINE fixture.
+    // POST /api/admin/map { slotId, fixtureId, home?, away?, kickoff? } - link a slot to a TxLINE fixture.
     // Set home/away to the TxLINE Participant1/Participant2 names so winner resolves correctly.
     if (path === '/api/admin/map' && method === 'POST') {
       const b = await req.json().catch(() => ({})) as { slotId?: string; fixtureId?: string | number; home?: string; away?: string; kickoff?: string };

@@ -1,4 +1,4 @@
-// BracketBoss frontend — one script for all three pages.
+// BracketBoss frontend - one script for all three pages.
 const ROUND_ORDER = ['r32', 'r16', 'qf', 'sf', 'final', 'third'];
 const ROUND_LABEL = {
   r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-finals',
@@ -77,7 +77,7 @@ function injectAuthUI() {
   let host = qs('#auth');
   if (!host) { host = document.createElement('div'); host.id = 'auth'; host.style.marginLeft = 'auto'; bar.appendChild(host); }
   host.innerHTML = '';
-  if (!GOOGLE_CLIENT_ID) return; // sign-in disabled (not configured) — app works fully without it
+  if (!GOOGLE_CLIENT_ID) return; // sign-in disabled (not configured) - app works fully without it
   const prof = store.profile();
   if (store.token() && prof) {
     const span = document.createElement('span');
@@ -115,7 +115,7 @@ function initHome() {
         body: JSON.stringify({ name: qs('#group-name').value || null }),
       });
       store.addGroup(code);
-      out.innerHTML = `Group code: <b class="mono">${code}</b> — <a href="/bracket.html?group=${code}">build your bracket →</a><br>Share this code with friends.`;
+      out.innerHTML = `Group code: <b class="mono">${code}</b> - <a href="/bracket.html?group=${code}">build your bracket →</a><br>Share this code with friends.`;
       renderYourStuff();
     } catch (e) { out.textContent = e.message; }
   });
@@ -185,7 +185,7 @@ async function buildMode(group) {
     return;
   }
   const lockedCount = Object.keys(locked).length;
-  qs('#status-bar').innerHTML = `Group <b class="mono">${group}</b> — pick a winner in every match.`
+  qs('#status-bar').innerHTML = `Group <b class="mono">${group}</b> - pick a winner in every match.`
     + (lockedCount ? ` <span class="muted">${lockedCount} completed match${lockedCount > 1 ? 'es are' : ' is'} already filled in.</span>` : '');
   qs('#builder-actions').classList.remove('hidden');
 
@@ -258,7 +258,7 @@ async function renderView(id) {
   try { data = await api(`/api/bracket/${id}`); }
   catch (e) { qs('#bracket').innerHTML = `<p class="muted">${e.message}</p>`; return; }
 
-  qs('#status-bar').innerHTML = `<b>${escapeHtml(data.userName)}</b>'s bracket — group <span class="mono">${data.groupCode}</span>`;
+  qs('#status-bar').innerHTML = `<b>${escapeHtml(data.userName)}</b>'s bracket - group <span class="mono">${data.groupCode}</span>`;
   const pill = qs('#score-pill'); pill.classList.remove('hidden');
   pill.textContent = `${data.score.total} pts · ${data.score.correctPicks} correct`;
 
@@ -295,7 +295,7 @@ function teamEl(slotId, team, picked, onPick, lockedWinner) {
   const b = document.createElement('button');
   if (!team) { b.className = 'team tbd'; b.textContent = 'TBD'; b.disabled = true; return b; }
   if (lockedWinner) {
-    // Completed match — winner pre-selected, both sides disabled.
+    // Completed match - winner pre-selected, both sides disabled.
     const isWinner = team === lockedWinner;
     b.className = 'team locked ' + (isWinner ? 'correct' : 'eliminated');
     b.disabled = true;
