@@ -525,6 +525,15 @@ h4 {
   cursor: default;
 }
 
+.match-meta {
+  padding: 3px 12px 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, .02);
+}
+.match-meta .kick { white-space: nowrap; }
+
 .team .tag {
   font-size: 11px;
   color: var(--muted);

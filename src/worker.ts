@@ -2,7 +2,7 @@
 import { allNodes, feedersOf, PLACEHOLDER_TEAMS, Round } from './bracketTree';
 import { MatchRow, propagate, validateBracket, Picks } from './bracketEngine';
 import { scoreBracket } from './scorer';
-import { listWorldCupFixtures, fetchResult, TxFixture } from './txline';
+import { listWorldCupFixtures, fetchResult, rawScores, TxFixture } from './txline';
 import { R32_DRAW, slotForTeams } from './bracket2026';
 
 export interface Env {
@@ -68,8 +68,9 @@ export default {
 
 // Poll every slot that's mapped to a TxLINE fixture but not yet resolved; apply + propagate any
 // that have finished. Returns what changed. Shared by the cron and POST /api/admin/refresh-results.
-async function pollResults(env: Env): Promise<{ checked: number; resolved: { slotId: string; winner: string; score: string }[] }> {
-  const resolved: { slotId: string; winner: string; score: string }[] = [];
+type Resolved = { slotId: string; winner: string; score: string; source: 'live' | 'baked' };
+async function pollResults(env: Env): Promise<{ checked: number; resolved: Resolved[] }> {
+  const resolved: Resolved[] = [];
   if (!env.TXLINE_API_KEY) return { checked: 0, resolved };
   const matches = await loadMatches(env);
   const mapped = Object.values(matches).filter((m) => m.match_id && !m.result_winner);
@@ -80,12 +81,12 @@ async function pollResults(env: Env): Promise<{ checked: number; resolved: { slo
       if (r.finished && r.winner) {
         const winnerName = r.winner === 'p1' ? m.home_slot : m.away_slot;
         const score = `${r.p1Goals}-${r.p2Goals}`;
-        if (winnerName) { await applyResult(env, m.slot_id, winnerName, score); resolved.push({ slotId: m.slot_id, winner: winnerName, score }); continue; }
+        if (winnerName) { await applyResult(env, m.slot_id, winnerName, score); resolved.push({ slotId: m.slot_id, winner: winnerName, score, source: 'live' }); continue; }
       }
     } catch (e) { console.log('poll error', m.slot_id, String(e)); }
-    // Fallback: live scores aged out but we have the baked result for this slot.
+    // Fallback: the live scores snapshot didn't resolve it — use the baked result if we have one.
     const bk = baked.get(m.slot_id);
-    if (bk) { await applyResult(env, m.slot_id, bk.winner, bk.score); resolved.push({ slotId: m.slot_id, winner: bk.winner, score: bk.score }); }
+    if (bk) { await applyResult(env, m.slot_id, bk.winner, bk.score); resolved.push({ slotId: m.slot_id, winner: bk.winner, score: bk.score, source: 'baked' }); }
   }
   return { checked: mapped.length, resolved };
 }
@@ -123,6 +124,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
         slotId: n.slotId, round: n.round, slotIndex: n.slotIndex,
         home: row?.home_slot ?? null, away: row?.away_slot ?? null,
         winner: row?.result_winner ?? null, score: row?.result_score ?? null,
+        kickoff: row?.kickoff ?? null,
       };
     });
     return json({ locked: await isLocked(env), lockAt: await meta(env, 'lock_at'), nodes });
@@ -247,6 +249,14 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
     // for the every-minute cron). Applies + propagates any that TxLINE reports finished.
     if (path === '/api/admin/refresh-results' && method === 'POST') {
       return json(await pollResults(env));
+    }
+
+    // GET /api/admin/probe/:fixtureId - raw TxLINE scores read for one fixture (diagnostic).
+    // Shows whether the feed still serves a finished match: { started, finished, winner, phase, ... }.
+    const mp = path.match(/^\/api\/admin\/probe\/(\w+)$/);
+    if (mp && method === 'GET') {
+      try { return json({ fixtureId: mp[1], result: await fetchResult(env, mp[1]), raw: await rawScores(env, mp[1]) }); }
+      catch (e) { return json({ fixtureId: mp[1], error: String((e as Error).message || e) }); }
     }
 
     // POST /api/admin/seed-teams { teams:[32] }  or  { r32:[{slotId,home,away}] } - real R32 draw

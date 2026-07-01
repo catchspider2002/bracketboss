@@ -86,43 +86,68 @@ export async function fetchResult(env: TxEnv, fixtureId: string | number): Promi
   if (!Array.isArray(arr) || arr.length === 0) {
     return { started: false, finished: false, winner: null, p1Goals: 0, p2Goals: 0, phase: 'NS' };
   }
-  // Most recent update wins (highest seq/timestamp).
-  const latest = arr.reduce((a, b) => (seqOf(b) > seqOf(a) ? b : a));
-  const phase = phaseOf(latest);
+  // Phase comes from the Action timeline (GameState is always "scheduled"); goals from the
+  // most recent record that actually carries Stats.
+  const phase = phaseFromActions(arr);
+  const rec = latestStatRec(arr);
   const started = phase !== 'NS';
   const finished = FINISHED.has(phase);
-  const { p1, p2 } = goalsOf(latest);
+  const { p1, p2 } = goalsOf(rec);
   let winner: 'p1' | 'p2' | null = null;
   if (finished) {
     if (p1 > p2) winner = 'p1';
     else if (p2 > p1) winner = 'p2';
-    else { const pen = penGoalsOf(latest); winner = pen.p1 > pen.p2 ? 'p1' : pen.p2 > pen.p1 ? 'p2' : null; }
+    else { const pen = penGoalsOf(rec); winner = pen.p1 > pen.p2 ? 'p1' : pen.p2 > pen.p1 ? 'p2' : null; }
   }
   return { started, finished, winner, p1Goals: p1, p2Goals: p2, phase };
 }
 
-// ---- defensive field extraction (TxLINE encodes phase as a numeric id; casing/shape can vary) ----
-// Soccer game-phase encoding (docs: scores/soccer-feed). Stat keys: 1/2 = P1/P2 total goals, 5001/5002 = PE goals.
-const PHASE_BY_ID: Record<number, string> = {
-  1: 'NS', 2: 'H1', 3: 'HT', 4: 'H2', 5: 'F', 6: 'WET', 7: 'ET1', 8: 'HTET', 9: 'ET2',
-  10: 'FET', 11: 'WPE', 12: 'PE', 13: 'FPE', 14: 'I', 15: 'A', 16: 'C', 17: 'TXCC', 18: 'TXCS', 19: 'P',
-};
-const PHASE_CODES = new Set(Object.values(PHASE_BY_ID));
-function phaseOf(u: any): string {
-  for (const k of Object.keys(u || {})) {
-    if (!/status|phase|gamestate/i.test(k)) continue;
-    let v: any = (u as any)[k];
-    if (v && typeof v === 'object') v = Object.keys(v)[0];
-    if (typeof v === 'number' && PHASE_BY_ID[v]) return PHASE_BY_ID[v];
-    if (typeof v === 'string') {
-      if (PHASE_CODES.has(v)) return v;
-      const n = Number(v); if (Number.isFinite(n) && PHASE_BY_ID[n]) return PHASE_BY_ID[n];
-    }
+// Diagnostic: return a compact timeline of the scores records so we can see how GameState
+// (and Action) progress across the match, plus the distinct GameState/Action vocabularies.
+export async function rawScores(env: TxEnv, fixtureId: string | number): Promise<any> {
+  const res = await authedGet(env, `/api/scores/snapshot/${fixtureId}`);
+  if (!res.ok) return { ok: false, status: res.status };
+  const arr = await res.json() as any[];
+  if (!Array.isArray(arr)) return { ok: true, nonArray: arr };
+  const rows = arr.map((r) => ({ seq: r?.Seq, action: r?.Action, state: r?.GameState, score: `${r?.Stats?.['1'] ?? '?'}-${r?.Stats?.['2'] ?? '?'}` }))
+    .sort((a, b) => (a.seq ?? 0) - (b.seq ?? 0));
+  return {
+    ok: true, count: arr.length,
+    gameStates: [...new Set(arr.map((r) => r?.GameState))],
+    actions: [...new Set(arr.map((r) => r?.Action))],
+    timeline: rows,
+  };
+}
+
+// ---- phase from the Action timeline ----
+// TxLINE's scores feed carries the match lifecycle in per-record `Action` values, not `GameState`
+// (which stays "scheduled"). We map the set/order of Actions to a phase code. `game_finalised` is
+// the terminal signal; a `kickoff` after `halftime_finalised` means the second half is underway.
+// Stat keys: 1/2 = P1/P2 total goals, 5001/5002 = penalty-shootout goals.
+function phaseFromActions(arr: any[]): string {
+  let hasKick = false, htSeq = -1, finalised = false;
+  for (const r of arr) {
+    const a = String(r?.Action || '');
+    const s = seqOf(r);
+    if (a === 'kickoff' || a === 'kickoff_team') hasKick = true;
+    if (a === 'halftime_finalised' && s > htSeq) htSeq = s;
+    if (a === 'game_finalised') finalised = true;
   }
-  return 'NS';
+  if (finalised) return 'F';
+  if (htSeq >= 0) {
+    for (const r of arr) if (String(r?.Action || '') === 'kickoff' && seqOf(r) > htSeq) return 'H2';
+    return 'HT';
+  }
+  return hasKick ? 'H1' : 'NS';
 }
 const num = (x: any) => (Number.isFinite(Number(x)) ? Number(x) : 0);
 function seqOf(u: any): number { return num(u?.Seq ?? u?.seq ?? u?.Timestamp ?? u?.timestamp ?? u?.Ts ?? u?.ts); }
+function hasStats(u: any): boolean { const s = u?.Stats ?? u?.stats; return !!s && typeof s === 'object' && (s['1'] != null || s['2'] != null); }
+function latestStatRec(arr: any[]): any {
+  let best: any = null;
+  for (const r of arr) if (hasStats(r) && (!best || seqOf(r) > seqOf(best))) best = r;
+  return best ?? (arr.length ? arr.reduce((a, b) => (seqOf(b) > seqOf(a) ? b : a)) : {});
+}
 function statMap(u: any): Map<number, number> {
   const m = new Map<number, number>();
   const s = u?.Stats ?? u?.stats;

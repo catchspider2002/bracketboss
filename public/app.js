@@ -177,7 +177,8 @@ async function buildMode(group) {
 
   // Completed matches: result already decided → pre-selected and not editable.
   const locked = {}; // slotId -> winning team
-  data.nodes.forEach((n) => { if (n.winner) locked[n.slotId] = n.winner; });
+  const meta = {};   // slotId -> { kickoff, score } for date/result labels
+  data.nodes.forEach((n) => { if (n.winner) locked[n.slotId] = n.winner; meta[n.slotId] = { kickoff: n.kickoff, score: n.score }; });
 
   if (data.locked) {
     qs('#status-bar').innerHTML = `Brackets are <b>locked</b>. <a href="/leaderboard.html?group=${group}">View leaderboard →</a>`;
@@ -224,7 +225,7 @@ async function buildMode(group) {
       for (let i = 0; i < sizeOf(round); i++) {
         const slotId = `${round}_${i}`;
         const [home, away] = participants(slotId);
-        grid.appendChild(matchEl(slotId, home, away, picks[slotId], onPick, locked[slotId]));
+        grid.appendChild(matchEl(slotId, home, away, picks[slotId], onPick, locked[slotId], meta[slotId]));
       }
       sec.appendChild(grid); root.appendChild(sec);
     }
@@ -262,6 +263,10 @@ async function renderView(id) {
   const pill = qs('#score-pill'); pill.classList.remove('hidden');
   pill.textContent = `${data.score.total} pts · ${data.score.correctPicks} correct`;
 
+  // Kickoff dates / final scores per slot (from the knockout tree).
+  const meta = {};
+  try { const kn = await api('/api/matches/knockout'); kn.nodes.forEach((n) => { meta[n.slotId] = { kickoff: n.kickoff, score: n.score }; }); } catch { /* ignore */ }
+
   const root = qs('#bracket'); root.innerHTML = '';
   for (const round of ROUND_ORDER) {
     const sec = document.createElement('div'); sec.className = `round ${round}`;
@@ -276,6 +281,8 @@ async function renderView(id) {
       if (res.winner) cls = res.winner === pick ? 'team correct' : 'team eliminated';
       el.innerHTML = `<div class="${cls}"><span>${escapeHtml(pick || 'TBD')}</span>` +
         `<span class="tag">${res.winner ? (res.winner === pick ? '✓' : 'actual: ' + escapeHtml(res.winner)) : 'pending'}</span></div>`;
+      const info = matchMeta(res.winner, meta[slotId]);
+      if (info) el.innerHTML += `<div class="match-meta">${info}</div>`;
       grid.appendChild(el);
     }
     sec.appendChild(grid); root.appendChild(sec);
@@ -285,11 +292,25 @@ async function renderView(id) {
   qs('#share-btn').addEventListener('click', () => navigator.clipboard.writeText(location.href));
 }
 
-function matchEl(slotId, home, away, picked, onPick, lockedWinner) {
+function matchEl(slotId, home, away, picked, onPick, lockedWinner, meta) {
   const el = document.createElement('div'); el.className = 'match' + (lockedWinner ? ' done' : '');
   el.appendChild(teamEl(slotId, home, picked, onPick, lockedWinner));
   el.appendChild(teamEl(slotId, away, picked, onPick, lockedWinner));
+  const info = matchMeta(lockedWinner, meta);
+  if (info) { const d = document.createElement('div'); d.className = 'match-meta'; d.innerHTML = info; el.appendChild(d); }
   return el;
+}
+// Date for upcoming matches, final score for completed ones.
+function fmtKick(iso) {
+  if (!iso) return '';
+  const d = new Date(iso); if (isNaN(d.getTime())) return '';
+  return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function matchMeta(lockedWinner, meta) {
+  if (!meta) return '';
+  if (lockedWinner) return meta.score ? `FT ${escapeHtml(meta.score)}` : 'Full time';
+  const k = fmtKick(meta.kickoff);
+  return k ? `<span class="kick">🕑 ${escapeHtml(k)}</span>` : '';
 }
 function teamEl(slotId, team, picked, onPick, lockedWinner) {
   const b = document.createElement('button');
