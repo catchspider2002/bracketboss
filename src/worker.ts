@@ -62,20 +62,33 @@ export default {
   // is no global bracket lock. No-op until fixtures are mapped (see auto-seed / /api/admin/map).
   async scheduled(_event: ScheduledEvent, env: Env): Promise<void> {
     await ensureSeeded(env);
-    if (!env.TXLINE_API_KEY) return; // not wired yet - nothing to poll
-    const matches = await loadMatches(env);
-    const mapped = Object.values(matches).filter((m) => m.match_id && !m.result_winner);
-    for (const m of mapped) {
-      try {
-        const r = await fetchResult(env, m.match_id!);
-        if (r.finished && r.winner) {
-          const winnerName = r.winner === 'p1' ? m.home_slot : m.away_slot;
-          if (winnerName) await applyResult(env, m.slot_id, winnerName, `${r.p1Goals}-${r.p2Goals}`);
-        }
-      } catch (e) { console.log('poll error', m.slot_id, String(e)); }
-    }
+    await pollResults(env);
   },
 };
+
+// Poll every slot that's mapped to a TxLINE fixture but not yet resolved; apply + propagate any
+// that have finished. Returns what changed. Shared by the cron and POST /api/admin/refresh-results.
+async function pollResults(env: Env): Promise<{ checked: number; resolved: { slotId: string; winner: string; score: string }[] }> {
+  const resolved: { slotId: string; winner: string; score: string }[] = [];
+  if (!env.TXLINE_API_KEY) return { checked: 0, resolved };
+  const matches = await loadMatches(env);
+  const mapped = Object.values(matches).filter((m) => m.match_id && !m.result_winner);
+  const baked = new Map(R32_DRAW.filter((d) => d.result).map((d) => [d.slot, d.result!]));
+  for (const m of mapped) {
+    try {
+      const r = await fetchResult(env, m.match_id!);
+      if (r.finished && r.winner) {
+        const winnerName = r.winner === 'p1' ? m.home_slot : m.away_slot;
+        const score = `${r.p1Goals}-${r.p2Goals}`;
+        if (winnerName) { await applyResult(env, m.slot_id, winnerName, score); resolved.push({ slotId: m.slot_id, winner: winnerName, score }); continue; }
+      }
+    } catch (e) { console.log('poll error', m.slot_id, String(e)); }
+    // Fallback: live scores aged out but we have the baked result for this slot.
+    const bk = baked.get(m.slot_id);
+    if (bk) { await applyResult(env, m.slot_id, bk.winner, bk.score); resolved.push({ slotId: m.slot_id, winner: bk.winner, score: bk.score }); }
+  }
+  return { checked: mapped.length, resolved };
+}
 
 async function route(req: Request, env: Env, url: URL): Promise<Response> {
   const path = url.pathname;
@@ -165,7 +178,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
       bracketId: row.id, groupCode: row.group_code, userName: row.user_name,
       picks, score,
       results: Object.fromEntries(Object.values(matches).map((r) => [r.slot_id,
-        { winner: r.result_winner, home: r.home_slot, away: r.away_slot }])),
+      { winner: r.result_winner, home: r.home_slot, away: r.away_slot }])),
     });
   }
 
@@ -203,14 +216,16 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
 
   // POST /api/mock-result  { slotId, winner, score }  - demo driver (stands in for TxLINE full_time)
   if (path === '/api/mock-result' && method === 'POST') {
+    if (!env.ADMIN_KEY || req.headers.get('X-Admin-Key') !== env.ADMIN_KEY) return json({ error: 'forbidden' }, 403);
     const body = await req.json().catch(() => ({})) as { slotId?: string; winner?: string; score?: string };
     if (!body.slotId || !body.winner) return json({ error: 'slotId and winner are required' }, 400);
     const changed = await applyResult(env, body.slotId, body.winner, body.score || '');
     return json({ changed });
   }
 
-  // POST /api/lock - manually lock (e.g. to test)
+  // POST /api/lock - manually lock (admin only)
   if (path === '/api/lock' && method === 'POST') {
+    if (!env.ADMIN_KEY || req.headers.get('X-Admin-Key') !== env.ADMIN_KEY) return json({ error: 'forbidden' }, 403);
     await setLocked(env);
     return json({ locked: true });
   }
@@ -226,6 +241,12 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
       const cid = url.searchParams.get('competitionId');
       const fixtures = await listWorldCupFixtures(env, cid ? Number(cid) : undefined);
       return json({ fixtures });
+    }
+
+    // POST /api/admin/refresh-results - poll every mapped, unresolved fixture right now (don't wait
+    // for the every-minute cron). Applies + propagates any that TxLINE reports finished.
+    if (path === '/api/admin/refresh-results' && method === 'POST') {
+      return json(await pollResults(env));
     }
 
     // POST /api/admin/seed-teams { teams:[32] }  or  { r32:[{slotId,home,away}] } - real R32 draw
@@ -277,7 +298,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
           fixtureId: f ? f.fixtureId : null,
           kickoff: f ? new Date(f.startTime).toISOString() : null,
           hasFixture: !!f,
-          knownResult: f ? null : (d.result ?? null), // fallback result for an aged-out finished match
+          knownResult: d.result ?? null, // baked result - used as a fallback if the live scores snapshot doesn't resolve
         };
       });
       const withFixture = assignments.filter((a) => a.hasFixture).length;
@@ -297,6 +318,7 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
         //    No global lock - brackets stay open; completed matches are locked per-match in the
         //    builder (pre-selected to the real winner, not editable) and enforced on submit.
         for (const a of assignments) {
+          let done = false;
           if (a.fixtureId) {
             try {
               const r = await fetchResult(env, a.fixtureId);
@@ -305,10 +327,13 @@ async function route(req: Request, env: Env, url: URL): Promise<Response> {
                 const score = `${r.p1Goals}-${r.p2Goals}`;
                 await applyResult(env, a.slotId, winnerName, score);
                 results.push({ slotId: a.slotId, winner: winnerName, score });
+                done = true;
               }
             } catch (e) { console.log('seed result error', a.slotId, String(e)); }
-          } else if (a.knownResult) {
-            // Finished match that aged out of the snapshot - apply the result from the draw data.
+          }
+          // Fallback: a finished match whose live scores snapshot has aged out (or has no fixture at
+          // all) still resolves from the baked draw result. Only applied if the live check didn't.
+          if (!done && a.knownResult) {
             await applyResult(env, a.slotId, a.knownResult.winner, a.knownResult.score);
             results.push({ slotId: a.slotId, winner: a.knownResult.winner, score: a.knownResult.score });
           }

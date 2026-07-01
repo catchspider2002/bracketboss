@@ -23,7 +23,7 @@ Fill out your World Cup knockout bracket, then watch TxLINE auto-update results 
 
 `src/txline.ts` calls the real TxLINE API: it fetches a guest JWT (cached in D1, auto-refreshed), then reads `/api/fixtures/snapshot` and `/api/scores/snapshot/{fixtureId}` with both required headers (`Authorization: Bearer <jwt>` + `X-Api-Token: <TXLINE_API_KEY>`). The cron resolves each finished knockout match to a winner (handles extra time + penalties) and propagates it.
 
-**It only acts on slots you've mapped to a fixture.** Because the knockout draw isn't known until the group stage ends, you map fixtures → bracket slots via the admin endpoints below. Until then the cron is a safe no-op, and you can still demo with `POST /api/mock-result`.
+**It only acts on slots you've mapped to a fixture.** Because the knockout draw isn't known until the group stage ends, you map fixtures → bracket slots via the admin endpoints below. Until then the cron is a safe no-op, and you can still demo with `POST /api/mock-result` (admin-gated - send `X-Admin-Key: $ADMIN_KEY`).
 
 ---
 
@@ -77,13 +77,13 @@ Copy `.dev.vars.example` → `.dev.vars` (gitignored) and fill in `TXLINE_API_KE
 | POST | `/api/bracket` | submit `{ groupCode, userName, picks, odds? }` |
 | GET | `/api/bracket/:id` | one bracket + computed score + results |
 | GET | `/api/leaderboard/:code` | ranked group leaderboard |
-| POST | `/api/mock-result` | demo: `{ slotId, winner, score }` → propagate + rescore |
-| POST | `/api/lock` | manually lock submissions |
+| POST | `/api/mock-result` | demo: `{ slotId, winner, score }` → propagate + rescore - **requires `X-Admin-Key: $ADMIN_KEY`** (403 otherwise) |
+| POST | `/api/lock` | manually lock submissions - **requires `X-Admin-Key: $ADMIN_KEY`** (403 otherwise) |
 
 ### Demo flow (no live match needed)
 
 1. Create a group on the home page, build + submit a bracket, open a second tab and submit another under the same code.
-2. Lock + fire a result: `curl -X POST .../api/mock-result -H 'content-type: application/json' -d '{"slotId":"r32_0","winner":"Brazil","score":"2-1"}'`
+2. Fire a result (admin): `curl -X POST .../api/mock-result -H "X-Admin-Key: $ADMIN_KEY" -H 'content-type: application/json' -d '{"slotId":"r32_0","winner":"Brazil","score":"2-1"}'`
 3. Watch the leaderboard update and the bracket view mark picks correct/eliminated.
 
 > Note: the placeholder R32 teams in `src/bracketTree.ts` are only stand-ins for first-boot. Now that the group stage is over, replace them with the real draw using the one-shot **auto-seed** endpoint described in "Going live with real results" below.
@@ -103,6 +103,10 @@ curl -H "X-Admin-Key: $KEY" "$BASE/api/admin/auto-seed-r32"
 # 2) APPLY - that's it, no fixtureIds needed:
 curl -X POST "$BASE/api/admin/auto-seed-r32" -H "X-Admin-Key: $KEY" \
   -H 'content-type: application/json' -d '{"apply":true}'
+
+# 3) (optional) Force an immediate results check across every mapped fixture, instead of waiting
+#    for the every-minute cron. Returns { checked, resolved:[{slotId,winner,score}] }:
+curl -X POST "$BASE/api/admin/refresh-results" -H "X-Admin-Key: $KEY"
 ```
 
 The builder now shows the real teams in their true positions, finished matches are scored on the spot (the response lists them in `results`), and the every-minute cron posts later winners automatically (extra time + penalties handled) and propagates teams forward. If a fixture's teams don't match the draw, it shows up in `unmatchedFixtures` - add the name variant to `ALIASES` in `src/bracket2026.ts`.
