@@ -86,8 +86,8 @@ export async function fetchResult(env: TxEnv, fixtureId: string | number): Promi
   if (!Array.isArray(arr) || arr.length === 0) {
     return { started: false, finished: false, winner: null, p1Goals: 0, p2Goals: 0, phase: 'NS' };
   }
-  // Most recent update wins (highest seq, then ts).
-  const latest = arr.reduce((a, b) => ((b?.seq ?? b?.ts ?? 0) > (a?.seq ?? a?.ts ?? 0) ? b : a));
+  // Most recent update wins (highest seq/timestamp).
+  const latest = arr.reduce((a, b) => (seqOf(b) > seqOf(a) ? b : a));
   const phase = phaseOf(latest);
   const started = phase !== 'NS';
   const finished = FINISHED.has(phase);
@@ -101,27 +101,40 @@ export async function fetchResult(env: TxEnv, fixtureId: string | number): Promi
   return { started, finished, winner, p1Goals: p1, p2Goals: p2, phase };
 }
 
-// ---- defensive field extraction (serialization of enums/stats can vary) ----
+// ---- defensive field extraction (TxLINE encodes phase as a numeric id; casing/shape can vary) ----
+// Soccer game-phase encoding (docs: scores/soccer-feed). Stat keys: 1/2 = P1/P2 total goals, 5001/5002 = PE goals.
+const PHASE_BY_ID: Record<number, string> = {
+  1: 'NS', 2: 'H1', 3: 'HT', 4: 'H2', 5: 'F', 6: 'WET', 7: 'ET1', 8: 'HTET', 9: 'ET2',
+  10: 'FET', 11: 'WPE', 12: 'PE', 13: 'FPE', 14: 'I', 15: 'A', 16: 'C', 17: 'TXCC', 18: 'TXCS', 19: 'P',
+};
+const PHASE_CODES = new Set(Object.values(PHASE_BY_ID));
 function phaseOf(u: any): string {
-  if (typeof u?.gameState === 'string' && u.gameState) return u.gameState;
-  const s = u?.statusSoccerId;
-  if (typeof s === 'string') return s;
-  if (s && typeof s === 'object') return Object.keys(s)[0] || 'NS';
+  for (const k of Object.keys(u || {})) {
+    if (!/status|phase|gamestate/i.test(k)) continue;
+    let v: any = (u as any)[k];
+    if (v && typeof v === 'object') v = Object.keys(v)[0];
+    if (typeof v === 'number' && PHASE_BY_ID[v]) return PHASE_BY_ID[v];
+    if (typeof v === 'string') {
+      if (PHASE_CODES.has(v)) return v;
+      const n = Number(v); if (Number.isFinite(n) && PHASE_BY_ID[n]) return PHASE_BY_ID[n];
+    }
+  }
   return 'NS';
 }
 const num = (x: any) => (Number.isFinite(Number(x)) ? Number(x) : 0);
+function seqOf(u: any): number { return num(u?.Seq ?? u?.seq ?? u?.Timestamp ?? u?.timestamp ?? u?.Ts ?? u?.ts); }
+function statMap(u: any): Map<number, number> {
+  const m = new Map<number, number>();
+  const s = u?.Stats ?? u?.stats;
+  if (Array.isArray(s)) { for (const it of s) { const k = Number(it?.Key ?? it?.key ?? it?.[0]); if (Number.isFinite(k)) m.set(k, num(it?.Value ?? it?.value ?? it?.[1])); } }
+  else if (s && typeof s === 'object') { for (const k of Object.keys(s)) { const kn = Number(k); if (Number.isFinite(kn)) m.set(kn, num((s as any)[k])); } }
+  return m;
+}
 function goalsOf(u: any): { p1: number; p2: number } {
-  const st = u?.stats || {};
-  if (st['1'] != null || st['2'] != null) return { p1: num(st['1']), p2: num(st['2']) };
-  const sc = u?.scoreSoccer;
-  return {
-    p1: num(sc?.Participant1?.Total?.Goals),
-    p2: num(sc?.Participant2?.Total?.Goals),
-  };
+  const sm = statMap(u); const sc = u?.ScoreSoccer ?? u?.scoreSoccer;
+  return { p1: sm.get(1) ?? num(sc?.Participant1?.Total?.Goals), p2: sm.get(2) ?? num(sc?.Participant2?.Total?.Goals) };
 }
 function penGoalsOf(u: any): { p1: number; p2: number } {
-  const st = u?.stats || {};
-  if (st['5001'] != null || st['5002'] != null) return { p1: num(st['5001']), p2: num(st['5002']) };
-  const sc = u?.scoreSoccer;
-  return { p1: num(sc?.Participant1?.PE?.Goals), p2: num(sc?.Participant2?.PE?.Goals) };
+  const sm = statMap(u); const sc = u?.ScoreSoccer ?? u?.scoreSoccer;
+  return { p1: sm.get(5001) ?? num(sc?.Participant1?.PE?.Goals), p2: sm.get(5002) ?? num(sc?.Participant2?.PE?.Goals) };
 }
