@@ -84,7 +84,7 @@ async function pollResults(env: Env): Promise<{ checked: number; resolved: Resol
         if (winnerName) { await applyResult(env, m.slot_id, winnerName, score); resolved.push({ slotId: m.slot_id, winner: winnerName, score, source: 'live' }); continue; }
       }
     } catch (e) { console.log('poll error', m.slot_id, String(e)); }
-    // Fallback: the live scores snapshot didn't resolve it — use the baked result if we have one.
+    // Fallback: the live scores snapshot didn't resolve it - use the baked result if we have one.
     const bk = baked.get(m.slot_id);
     if (bk) { await applyResult(env, m.slot_id, bk.winner, bk.score); resolved.push({ slotId: m.slot_id, winner: bk.winner, score: bk.score, source: 'baked' }); }
   }
